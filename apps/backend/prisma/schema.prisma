@@ -1,0 +1,423 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  OWNER
+  MANAGER
+  CASHIER
+  ACCOUNTANT
+}
+
+enum AuditAction {
+  LOGIN
+  ORDER_FINALIZED
+  PAYMENT_CREATED
+  SHIFT_OPENED
+  SHIFT_CLOSED
+  EXPENSE_CREATED
+  EXPENSE_VOIDED
+  PRICE_CHANGED
+  USER_ROLE_CHANGED
+}
+
+enum OrderType {
+  dine_in
+  takeaway
+}
+
+enum OrderStatus {
+  OPEN
+  SETTLING
+  CLOSED
+  VOID
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  MANUAL
+}
+
+enum FinancialEntryType {
+  SALE
+  DISCOUNT
+  PAYMENT
+  REFUND
+  VOID
+}
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+enum OrderItemType {
+  MENU
+  GAME
+}
+
+enum ShiftStatus {
+  OPEN
+  CLOSED
+}
+
+enum SessionStatus {
+  running
+  paused
+  ended
+}
+
+enum PersonType {
+  PLAY
+  ORDER
+  BOTH
+}
+
+enum TableStatus {
+  FREE
+  SETTLING
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  role      UserRole
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  shifts    Shift[]
+  orders    Order[]    @relation("OpenedBy")
+  auditLogs AuditLog[]
+  idempotencyKeys Idempotency[]
+  shiftAudits ShiftAudit[]
+  createdExpenses Expense[] @relation("ExpenseCreatedBy")
+  voidedExpenses Expense[]  @relation("ExpenseVoidedBy")
+}
+
+model CafeTable {
+  id       Int         @id @default(autoincrement())
+  tableNo  Int         @unique
+  isActive Boolean     @default(true)
+  status   TableStatus @default(FREE)
+
+  orders   Order[]
+  sessions TableSession[]
+  people   TablePerson[]
+  gameSessions GameSession[]
+}
+
+model TablePerson {
+  id       Int        @id @default(autoincrement())
+  tableId  Int
+  name     String
+  type     PersonType
+  joinedAt DateTime   @default(now())
+  leftAt   DateTime?
+
+  table CafeTable @relation(fields: [tableId], references: [id])
+  gameCharges          GameCharge[]
+  payerPayments        Payment[]   @relation("Payer")
+  beneficiaryPayments  Payment[]   @relation("Beneficiary")
+
+  @@index([tableId])
+}
+
+model GameSession {
+  id        Int      @id @default(autoincrement())
+  tableId   Int
+  orderId   Int?
+  startedAt DateTime
+  endedAt   DateTime?
+
+  table   CafeTable   @relation(fields: [tableId], references: [id])
+  order   Order?      @relation(fields: [orderId], references: [id])
+  charges GameCharge[]
+
+  @@index([tableId])
+  @@index([orderId])
+}
+
+model GameCharge {
+  id              Int      @id @default(autoincrement())
+  gameSessionId   Int
+  orderId         Int
+  personId        Int
+  minutes         Int
+  ratePerHour     Int
+  price           Int
+  discountPercent Int
+  finalPrice      Int
+
+  gameSession GameSession @relation(fields: [gameSessionId], references: [id])
+  order       Order       @relation(fields: [orderId], references: [id])
+  person      TablePerson @relation(fields: [personId], references: [id])
+
+  @@index([gameSessionId])
+  @@index([orderId])
+  @@index([personId])
+}
+
+model MenuCategory {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique
+  items     MenuItem[]
+  createdAt DateTime   @default(now())
+}
+
+model MenuItem {
+  id         Int          @id @default(autoincrement())
+  name       String
+  price      Int
+  isActive   Boolean      @default(true)
+
+  categoryId Int
+  category   MenuCategory @relation(fields: [categoryId], references: [id])
+
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  orderItems OrderItem[]
+}
+
+model Shift {
+  id           Int         @id @default(autoincrement())
+  openedAt     DateTime    @default(now())
+  closedAt     DateTime?
+  openingCash  Int
+  expectedCash Int?
+  countedCash  Int?
+  difference   Int?
+  snapshot     Json?
+  status       ShiftStatus @default(OPEN)
+  createdAt    DateTime    @default(now())
+  userId       Int?
+
+  user   User?  @relation(fields: [userId], references: [id])
+  orders Order[]
+  audits ShiftAudit[]
+  expenses Expense[]
+
+  @@index([status])
+}
+
+model Order {
+  id             Int         @id @default(autoincrement())
+  orderNo        String      @unique
+  type           OrderType
+  tableId        Int?
+  status         OrderStatus @default(OPEN)
+  openedAt       DateTime    @default(now())
+  closedAt       DateTime?
+  openedByUserId Int
+  shiftId        Int?
+
+  subtotal       Int         @default(0)
+  discountAmount Int         @default(0)
+  total          Int         @default(0)
+  note           String?
+
+  table    CafeTable? @relation(fields: [tableId], references: [id])
+  openedBy User       @relation("OpenedBy", fields: [openedByUserId], references: [id])
+  shift    Shift?     @relation(fields: [shiftId], references: [id])
+
+  items    OrderItem[]
+  payments Payment[]
+  gameSessions GameSession[]
+  gameCharges  GameCharge[]
+  sessions TableSession[]
+
+  @@index([status])
+}
+
+model OrderItem {
+  id         Int      @id @default(autoincrement())
+  orderId    Int
+  type       OrderItemType @default(MENU)
+  finalPrice Int      @default(0)
+  menuItemId Int?
+  name       String
+  qty        Float    @default(1)
+  unitPrice  Int
+  lineTotal  Int
+  note       String?
+  createdAt  DateTime @default(now())
+
+  order    Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItem MenuItem? @relation(fields: [menuItemId], references: [id])
+}
+
+model Payment {
+  id                  Int           @id @default(autoincrement())
+  orderId             Int
+  payerPersonId       Int
+  beneficiaryPersonId Int?
+  amount              Int
+  method              PaymentMethod
+  idempotencyKey      String?       @unique
+  paidAt              DateTime      @default(now())
+
+  order       Order       @relation(fields: [orderId], references: [id])
+  payer       TablePerson @relation("Payer", fields: [payerPersonId], references: [id])
+  beneficiary TablePerson? @relation("Beneficiary", fields: [beneficiaryPersonId], references: [id])
+
+  @@index([orderId])
+  @@index([payerPersonId])
+  @@index([beneficiaryPersonId])
+  @@index([paidAt])
+}
+
+model Account {
+  id        Int          @id @default(autoincrement())
+  code      String       @unique
+  name      String
+  type      AccountType
+  createdAt DateTime     @default(now())
+
+  entries   LedgerEntry[]
+}
+
+model JournalEntry {
+  id          Int           @id @default(autoincrement())
+  reference   String?       @unique
+  description String?
+  createdAt   DateTime      @default(now())
+
+  entries     LedgerEntry[]
+
+  @@index([createdAt])
+}
+
+model LedgerEntry {
+  id             Int          @id @default(autoincrement())
+  journalEntryId Int
+  accountId      Int
+  debit          Int          @default(0)
+  credit         Int          @default(0)
+
+  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id])
+  account        Account      @relation(fields: [accountId], references: [id])
+
+  @@index([accountId])
+  @@index([journalEntryId])
+}
+
+model FinancialEntry {
+  id          String             @id @default(cuid())
+  createdAt   DateTime           @default(now())
+
+  type        FinancialEntryType
+  amount      Int
+  method      PaymentMethod?
+  note        String?
+
+  orderId     Int?
+  tableId     Int?
+  orderItemId String?
+  paymentId   String?
+
+  source      String?
+
+  @@index([createdAt])
+  @@index([type])
+  @@index([orderId])
+  @@index([tableId])
+}
+
+model TableSession {
+  id           Int           @id @default(autoincrement())
+  orderId      Int
+  tableId      Int
+  kind         String        @default("game")
+  ratePerHour  Int           @default(50000) // TOMAN
+  startedAt    DateTime
+  pausedAt     DateTime?
+  endedAt      DateTime?
+  totalMinutes Int           @default(0)
+  amount       Int           @default(0)
+  status       SessionStatus @default(running)
+
+  order Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  table CafeTable @relation(fields: [tableId], references: [id])
+}
+
+model Expense {
+  id          Int           @id @default(autoincrement())
+  shiftId     Int
+  amount      Int
+  description String
+  category    String
+  method      PaymentMethod @default(CASH)
+  createdBy   Int?
+  createdAt   DateTime      @default(now())
+  isVoided    Boolean       @default(false)
+  voidedAt    DateTime?
+  voidedBy    Int?
+
+  shift   Shift @relation(fields: [shiftId], references: [id], onDelete: Restrict)
+  creator User? @relation("ExpenseCreatedBy", fields: [createdBy], references: [id])
+  voider  User? @relation("ExpenseVoidedBy", fields: [voidedBy], references: [id])
+
+  @@index([shiftId])
+  @@index([createdAt])
+  @@index([isVoided])
+}
+
+model AuditLog {
+  id         Int         @id @default(autoincrement())
+  action     AuditAction
+  entityType String
+  entityId   Int?
+  userId     Int?
+  metadata   Json?
+  createdAt  DateTime    @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([action])
+  @@index([entityType])
+  @@index([entityId])
+  @@index([createdAt])
+}
+
+model Idempotency {
+  id           Int      @id @default(autoincrement())
+  key          String
+  userId       Int
+  endpoint     String
+  responseHash String
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([key, userId, endpoint])
+  @@index([endpoint])
+  @@index([createdAt])
+}
+
+model ShiftAudit {
+  id          Int      @id @default(autoincrement())
+  shiftId     Int
+  closedBy    Int?
+  closedAt    DateTime
+  revenue     Int
+  difference  Int
+  anomalyFlag Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  shift Shift @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  user  User? @relation(fields: [closedBy], references: [id])
+
+  @@index([shiftId])
+  @@index([closedAt])
+  @@index([anomalyFlag])
+}

@@ -1,0 +1,13 @@
+packages:
+  - apps/*
+
+ignoredBuiltDependencies:
+  - '@nestjs/core'
+  - unrs-resolver
+
+onlyBuiltDependencies:
+  - '@prisma/client'
+  - '@prisma/engines'
+  - bcrypt
+  - prisma
+  - sharp
