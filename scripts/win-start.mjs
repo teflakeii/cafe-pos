@@ -21,8 +21,8 @@ const children = [];
 
 function startService(filter, label) {
   const child = spawn(
-    "pnpm",
-    ["--filter", filter, "run", "start:prod"],
+    "corepack",
+    ["pnpm", "--filter", filter, "run", "start:prod"],
     {
       cwd: repoRoot,
       stdio: "inherit",

@@ -16,6 +16,8 @@
     "db:generate": "pnpm --filter @cafe/backend run db:generate",
     "db:seed": "pnpm --filter @cafe/backend run db:seed",
     "setup": "pnpm install && pnpm db:generate && pnpm build && pnpm db:migrate && pnpm db:seed",
+    "setup:windows": "corepack pnpm install && node scripts/win-setup.mjs --prepare-env && corepack pnpm db:generate && corepack pnpm build && node scripts/win-setup.mjs",
+    "check:windows": "node scripts/win-check.mjs",
     "start:prod": "pnpm --parallel --filter \"./apps/*\" run start:prod",
     "release": "node scripts/build-release.mjs",
     "test": "pnpm --filter @cafe/backend run test"

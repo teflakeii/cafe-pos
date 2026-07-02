@@ -4,12 +4,16 @@ dist
 out
 build
 coverage
+logs
 .DS_Store
 Thumbs.db
+Desktop.ini
 *.log
+*.zip
 npm-debug.log*
 pnpm-debug.log*
 *.db
+*.sqlite
 *.db-journal
 *.db-wal
 *.db-shm
@@ -25,8 +29,15 @@ prisma/*.db
 
 # Windows installer build artifacts
 /release/
+/Release/
 /vendor/
 installer/dist/
+/Customer-Delivery/
+/Customer-Delivery.zip
+/Customer-Delivery-file-manifest.txt
+/Customer-Delivery-summary.txt
+/Customer-Delivery-zip-manifest.txt
+/Release.zip
 
 .codex-pets/
 CafePOS/
