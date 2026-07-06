@@ -12,8 +12,8 @@ function isPosAllowedRole(role: string): boolean {
 export default function PosLoginPage() {
   const router = useRouter();
 
-  const [email, setEmail] = useState('cashier@cafe.local');
-  const [password, setPassword] = useState('Cashier123!');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 

@@ -3,6 +3,14 @@ import { AccountType, PrismaClient, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 
+function requireSeedPassword(name: string): string {
+  const value = process.env[name];
+  if (!value || value.length < 8) {
+    throw new Error(`${name} must be set to seed demo users`);
+  }
+  return value;
+}
+
 @Injectable()
 export class SeedService {
   constructor(private readonly prisma: PrismaService) {}
@@ -25,29 +33,29 @@ export class SeedService {
     }> = [
       {
         email: 'owner@cafe.local',
-        password: 'Owner123!',
+        password: requireSeedPassword('SEED_OWNER_PASSWORD'),
         role: UserRole.OWNER,
       },
       {
         email: 'manager@cafe.local',
-        password: 'Manager123!',
+        password: requireSeedPassword('SEED_MANAGER_PASSWORD'),
         role: UserRole.MANAGER,
       },
       {
         email: 'cashier@cafe.local',
-        password: 'Cashier123!',
+        password: requireSeedPassword('SEED_CASHIER_PASSWORD'),
         role: UserRole.CASHIER,
       },
       {
         email: 'accountant@cafe.local',
-        password: 'Accountant123!',
+        password: requireSeedPassword('SEED_ACCOUNTANT_PASSWORD'),
         role: UserRole.ACCOUNTANT,
       },
     ];
 
     const seedProfile = (process.env.SEED_PROFILE ?? 'default').toLowerCase();
     const ownerEmail = process.env.SEED_OWNER_EMAIL ?? 'owner@cafe.local';
-    const ownerPassword = process.env.SEED_OWNER_PASSWORD ?? 'Owner123!';
+    const ownerPassword = requireSeedPassword('SEED_OWNER_PASSWORD');
 
     const usersToSeed =
       seedProfile === 'minimal'

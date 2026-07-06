@@ -1,13 +1,15 @@
 {
   "name": "cafe-pos",
   "version": "1.0.0",
-  "description": "",
+  "description": "Full-stack cafe POS and back-office management system",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "pnpm --filter @cafe/backend build && pnpm --filter @cafe/pos build && pnpm --filter @cafe/admin build",
+    "lint": "pnpm --filter @cafe/backend lint && pnpm --filter @cafe/pos lint && pnpm --filter @cafe/admin lint",
+    "test": "pnpm --filter @cafe/backend test"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["pos", "cafe", "nestjs", "nextjs", "prisma", "typescript"],
+  "author": "Saeed Fazelipanah",
   "license": "ISC",
   "packageManager": "pnpm@10.29.1"
 }
