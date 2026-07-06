@@ -1,8 +1,17 @@
 # Cafe POS
 
 [![CI](https://github.com/teflakeii/cafe-pos/actions/workflows/ci.yml/badge.svg)](https://github.com/teflakeii/cafe-pos/actions/workflows/ci.yml)
+[![Stack](https://img.shields.io/badge/stack-NestJS%20%7C%20Next.js%20%7C%20Prisma%20%7C%20TypeScript-0f766e)](#tech-stack)
 
 Cafe POS is a full-stack point-of-sale and back-office management system for small cafes. It includes a cashier-facing POS, an admin dashboard, and a NestJS backend with Prisma-managed persistence.
+
+![Cafe POS login](docs/screenshots/cafe-pos-login.png)
+
+## 30-Second Snapshot
+
+- What it is: a full-stack cafe POS and back-office system.
+- Core value: models table service, shift accountability, payments, reporting, expenses, audit logs, and role-based administration.
+- Engineering focus: TypeScript monorepo, NestJS API, Next.js apps, Prisma migrations, RBAC, CI, and portfolio-grade documentation.
 
 ## Overview
 
@@ -48,6 +57,8 @@ flowchart LR
   API --> Prisma["Prisma Client"]
   Prisma --> DB["Relational Database"]
 ```
+
+See [docs/architecture.md](docs/architecture.md) for the operational flow diagram.
 
 ## Folder Structure
 
