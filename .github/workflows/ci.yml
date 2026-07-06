@@ -20,6 +20,7 @@ jobs:
           node-version: "22"
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @cafe/backend exec prisma generate --schema prisma/schema.prisma
       - run: pnpm test
       - run: pnpm lint
         continue-on-error: true
